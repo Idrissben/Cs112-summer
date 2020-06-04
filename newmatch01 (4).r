@@ -30,7 +30,7 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
 
   GenMatchWrapper <- function(exponents) {
     
-    print(exponents)
+    #print(exponents)
     XN <- Xs
     
     # MODE SWITCH BETWEEN EXPONENTIATION AND LOGARITHM
@@ -46,19 +46,22 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
       return('ERROR - UNKNOWN MODE')
     }
     
-    print(head(XN))
+    #print(head(XN))
     
     genout <- GenMatch(Tr = Tr, X = XN, print.level = 0, pop.size = pop.size, max.generations = max.generations)
-
+  
+    print(genout$value[1])
     return(genout$value[1])
   }
   
   # prepare domains
   dom <- cbind(rep(1.01, n.var), rep(1.99, n.var))
-  print(dom)
+  #print(dom)
   
   
   genoudout <- genoud(GenMatchWrapper, nvars = n.var, max = TRUE, pop.size = pop.size, max.generations = max.generations, Domains = dom, boundary.enforcement = 2)
+  
+  weights = genoud$par
   
   XM <- Xs
   # MODE SWITCH
@@ -74,9 +77,9 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
     return('ERROR - UNKNOWN MODE')
   }
   
-  print(head(XM))
+  #print(head(XM))
   
-  genout_fin <- GenMatch(Tr = Tr, X = XM, pop.size = 11)
+  genout_fin <- GenMatch(Tr = Tr, X = XM, pop.size = pop.size *100)
   mout_fin <- Match(Tr = Tr, X = XM, Weight.matrix = genout_fin)
   
   end.time <- Sys.time()

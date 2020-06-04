@@ -22,7 +22,7 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
   n.obs <- length(Tr)
   n.var <- ncol(Xs)
   
-  genout_start <- GenMatch(Tr = Tr, X = Xs, pop.size = 2000)
+  genout_start <- GenMatch(Tr = Tr, X = Xs, pop.size = pop.size*100)
   
   
   for (i in 1:length(genout_start$par)){

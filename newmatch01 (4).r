@@ -83,7 +83,7 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
   mout_fin <- Match(Tr = Tr, X = XM, Weight.matrix = genout_fin)
   
   end.time <- Sys.time()
-  return(c(mout_fin, XM, end.time - start.time))
+  return(c(mout_fin, XM, end.time - start.time,genout_fin$value))
     
 }
 

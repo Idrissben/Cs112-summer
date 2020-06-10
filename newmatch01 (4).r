@@ -27,7 +27,10 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
   
   for (i in 1:length(genout_start$par)){
     Xs[,i] = Xs[,i] * genout_start$par[i]}  
-
+  
+  counter = 0
+  weightsopti = c()
+  
   GenMatchWrapper <- function(exponents) {
     
     #print(exponents)
@@ -49,8 +52,15 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
     #print(head(XN))
     
     genout <- GenMatch(Tr = Tr, X = XN, print.level = 0, pop.size = pop.size, max.generations = max.generations)
-  
+    
     print(genout$value[1])
+    
+    if (genout$value[1] > counter){
+      counter = genout$value[1]
+      weightsopti = genout$par
+      print("counter is")
+      print(counter)
+    }
     return(genout$value[1])
   }
   
@@ -61,8 +71,7 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
   
   genoudout <- genoud(GenMatchWrapper, nvars = n.var, max = TRUE, pop.size = pop.size, max.generations = max.generations, Domains = dom, boundary.enforcement = 2)
   
-  weights = genoud$par
-  
+
   XM <- Xs
   # MODE SWITCH
   if (mode == 'exp') {
@@ -79,14 +88,10 @@ NewMatch <- function(Tr, Xs, mode = 'exp', pop.size = 10, max.generations = 5) {
   
   #print(head(XM))
   
-  genout_fin <- GenMatch(Tr = Tr, X = XM, pop.size = pop.size *100)
+  genout_fin <- GenMatch(Tr = Tr, X = XM, pop.size = pop.size *100,weights = weightsopti)
   mout_fin <- Match(Tr = Tr, X = XM, Weight.matrix = genout_fin)
   
   end.time <- Sys.time()
   return(c(mout_fin, XM, end.time - start.time,genout_fin$value))
-    
+  
 }
-
-
-
-

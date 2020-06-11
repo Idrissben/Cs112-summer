@@ -25,15 +25,12 @@ NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, do
   
   # run an initial GenMatch to get starting parameters
   genout.start <- GenMatch(Tr = Tr, X = Xs, pop.size = pop.size*100, max.generations = max.generations*5, BalanceMatrix = X)
+  n.p.values <- length(genout.start$values)
   
   for (i in c(1:n.var)) {
     Xs[, i] <- Xs[, i]*genout.start$par[i]
   }
-  
-  # prepare storage for best p-value & its corresponding weights
-  best.p <- 0
-  best.weights <- c(rep(1, n.var))
-  
+
   # prepare domains
   dom <- cbind(rep(domains[1], n.var), rep(domains[2], n.var))
 
@@ -57,28 +54,17 @@ NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, do
     
     # print(head(XN))
     
-    genout <- GenMatch(Tr = Tr, X = XN, print.level = 1, file.path = , pop.size = pop.size, max.generations = max.generations, BalanceMatrix = X)
+    genout <- GenMatch(Tr = Tr, X = XN, print.level = 1, project.path = paste(tempdir(), "/genoud.txt", sep = ""), pop.size = pop.size, max.generations = max.generations, BalanceMatrix = X)
     
-    # store p-value & its parameters if best
-    p <- genout$value[1]
-    
-    if (genout$value[1] > best.p) {
-      print("----")
-      print("----updating best weights")
-      print("p has improved from")
-      print(best.p)
-      print("   to")
-      best.p <- p
-      print(best.p)
-      best.weights <- genout$par
-      print("the new best weights are")
-      print(best.weights)
-    }
-
     return(genout$value[1]) # = highest lowest p-value
   }
   
   genoudout <- genoud(GenMatchWrapper, nvars = n.var, max = TRUE, pop.size = pop.size, max.generations = max.generations, Domains = dom, boundary.enforcement = 2)
+  
+  # parse the file to find the best result's weights
+  file_data <- read.delim(paste(tempdir(), "/genoud.txt", sep = ""), skip = 1, header = FALSE, nrows = 1)
+  best.weights <- file_data[1, (2+n.p.values):(1+n.p.values+n.var)]
+  best.weights <- as.numeric(best.weights[1,])
   
   XM <- Xs
   # MODE SWITCH
@@ -96,7 +82,7 @@ NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, do
   
   print(head(XM))
   
-  genout.fin <- GenMatch(Tr = Tr, X = XM, pop.size = pop.size*100, max.generations = max.generations*5, starting.values = best.weights, BalanceMatrix = X)
+  genout.fin <- GenMatch(Tr = Tr, X = XM, pop.size = pop.size*100, max.generations = max.generations*5, BalanceMatrix = X, starting.values = best.weights)
   mout.fin <- Match(Tr = Tr, X = XM, Weight.matrix = genout.fin)
   
   end.time <- Sys.time()
@@ -107,5 +93,4 @@ NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, do
   print(sprintf("exponents: %s", genoudout$par))
   print(sprintf("time taken: %s", end.time - start.time))
   return(c(mout.fin, XM, genout.fin$value, genoudout$par, end.time - start.time))
-    
 }

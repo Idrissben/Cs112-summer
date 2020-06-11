@@ -6,7 +6,7 @@ library(rgenoud)
 #
 #
 # THE IMPORTANT FUNCTION
-NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, domains = c(1.01, 1.99)) {
+NewMatch <- function(Tr, X, pop.size = 10, max.generations = 5, domains = c(1.01, 1.99)) {
   start.time <- Sys.time()
   
   Xs <- X
@@ -14,12 +14,7 @@ NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, do
   if (length(Tr) != nrow(Xs)) {
     return('ERROR - INCOMPATIBLE LENGTHS')
   }
-  
-  # patch for zeros in log mode
-  if (mode == 'log') {
-    Xs[Xs == 0] <- 0.0001
-  }
-  
+
   n.obs <- length(Tr)
   n.var <- ncol(Xs)
   
@@ -39,19 +34,10 @@ NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, do
     # print(exponents)
     XN <- Xs
     
-    # MODE SWITCH BETWEEN EXPONENTIATION AND LOGARITHM
-    if (mode == 'exp') {
-      for (i in c(1:n.var)) {
-        XN[, i] <- XN[, i]^exponents[i]
-      }
-    } else if (mode == 'log') {
-      for (i in c(1:n.var)) {
-        XN[, i] <- log(XN[, i], exponents[i])
-      }
-    } else {
-      return('ERROR - UNKNOWN MODE')
+    for (i in c(1:n.var)) {
+      XN[, i] <- XN[, i]^exponents[i]
     }
-    
+
     # print(head(XN))
     
     genout <- GenMatch(Tr = Tr, X = XN, print.level = 1, project.path = paste(tempdir(), "/genoud.txt", sep = ""), pop.size = pop.size, max.generations = max.generations, BalanceMatrix = X)
@@ -67,19 +53,10 @@ NewMatch <- function(Tr, X, mode = 'exp', pop.size = 10, max.generations = 5, do
   best.weights <- as.numeric(best.weights[1,])
   
   XM <- Xs
-  # MODE SWITCH
-  if (mode == 'exp') {
-    for (i in c(1:n.var)) {
-      XM[, i] <- XM[, i]^genoudout$par[i]
-    }
-  } else if (mode == 'log') {
-    for (i in c(1:n.var)) {
-      XM[, i] <- log(XM[, i], genoudout$par[i])
-    }
-  } else {
-    return('ERROR - UNKNOWN MODE')
+  for (i in c(1:n.var)) {
+    XM[, i] <- XM[, i]^genoudout$par[i]
   }
-  
+
   print(head(XM))
   
   genout.fin <- GenMatch(Tr = Tr, X = XM, pop.size = pop.size*100, max.generations = max.generations*5, BalanceMatrix = X, starting.values = best.weights)

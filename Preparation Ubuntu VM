@@ -14,6 +14,10 @@ install.packages('Matching')
 
 install.packages('rgenoud')
 
+library(Matching)
+
+library(rgenoud)
+
 #edit link and name
 outnonlin_1 = read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0ZLMEnfetqd6DgkZP6iUgG6MArRqQVJJHUxpXEO39m5vR08FTbyj-YLw2wTq1657zI1cSGqqmwY_N/pub?gid=1117723108&single=true&output=csv')
 

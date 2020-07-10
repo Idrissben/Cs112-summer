@@ -19,12 +19,12 @@ library(Matching)
 library(rgenoud)
 
 #edit link and name
-outnonlin_1 = read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0ZLMEnfetqd6DgkZP6iUgG6MArRqQVJJHUxpXEO39m5vR08FTbyj-YLw2wTq1657zI1cSGqqmwY_N/pub?gid=1117723108&single=true&output=csv')
+outnonlin_2 = read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vTd4G5-TabJLI77bI8p8rcePQXM_OYJ-z2vD8s-cMYYGG2r2EJ_DwKnw01cKjIsqXmD7ABwbcJVhhLl/pub?gid=305126105&single=true&output=csv')
 
-X = cbind(outnonlin_1$X0,outnonlin_1$X1,outnonlin_1$X2)
+X = cbind(outnonlin_2$X0,outnonlin_2$X1,outnonlin_2$X2)
 X = X+1 
 
-Tr = outnonlin_1$T 
+Tr = outnonlin_2$T 
 
 #(Here copy paste NewMatch)
 

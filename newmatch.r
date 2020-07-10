@@ -130,6 +130,7 @@ NewMatch <- function(Tr,
                      time = end.time - start.time)
   if (start.gm) {
     outputlist[['start.weights']] = genout.start$par
+    outputlist[['start.pvalues']] = genout.start$value
   }
   
   print('')

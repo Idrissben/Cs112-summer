@@ -28,7 +28,7 @@ Tr = outnonlin_2$T
 
 #(Here copy paste NewMatch)
 
-NewMatch(X = X, Tr = Tr, pop.size = 40)
+NewMatch_outnonlin_2 = NewMatch(X = X, Tr = Tr, pop.size = 40)
 
 #manual command: control + a, d to detach from the screen and then use screen -r to resume
 

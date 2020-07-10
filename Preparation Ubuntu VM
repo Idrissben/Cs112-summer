@@ -1,0 +1,20 @@
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+
+sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
+
+sudo apt update
+
+sudo apt install r-base
+
+install.packages('Matching')
+
+install.packages('rgenoud')
+
+outnonlin_1 = read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0ZLMEnfetqd6DgkZP6iUgG6MArRqQVJJHUxpXEO39m5vR08FTbyj-YLw2wTq1657zI1cSGqqmwY_N/pub?gid=1117723108&single=true&output=csv')
+
+X = cbind(outnonlin_1$X0,outnonlin_1$X1,outnonlin_1$X2)
+X = X+1 
+
+Tr = outnonlin_1$T 
+
+NewMatch(X = X, Tr = Tr, pop.size = 40)

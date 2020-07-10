@@ -28,7 +28,8 @@ Tr = outnonlin_3$T
 
 #(Here copy paste NewMatch)
 
-NewMatch_outnonlin_3 = NewMatch(X = X, Tr = Tr, pop.size = 40)
+set.seed(YOUR FAVOURITE NUMBER)
+NewMatch_outnonlin_3 = NewMatch(X = X, Tr = Tr, pop.size = 100, max.generations = 20)
 
 #manual command: control + a, d to detach from the screen and then use screen -r to resume
 

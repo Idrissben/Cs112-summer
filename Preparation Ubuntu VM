@@ -6,6 +6,10 @@ sudo apt update
 
 sudo apt install r-base
 
+R
+
+screen
+
 install.packages('Matching')
 
 install.packages('rgenoud')
@@ -19,3 +23,6 @@ X = X+1
 Tr = outnonlin_1$T 
 
 NewMatch(X = X, Tr = Tr, pop.size = 40)
+
+#manual command: control + a, d to detach from the screen and then use screen -r to resume
+

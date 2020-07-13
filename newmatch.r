@@ -95,7 +95,8 @@ NewMatch <- function(Tr,
                       pop.size = pop.size, 
                       max.generations = max.generations, 
                       Domains = dom, 
-                      boundary.enforcement = 2)
+                      boundary.enforcement = 2,
+                      starting.values = rep(1, n.var))
   
   # parse the file to find the best result's weights
   file_data <- read.delim(paste(tempdir(), "/genoud.txt", sep = ""), skip = 1, header = FALSE, nrows = 1)

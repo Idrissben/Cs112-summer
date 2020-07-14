@@ -10,7 +10,7 @@ NewMatch <- function(Tr,
                      X, 
                      pop.size = 10, 
                      max.generations = 5, 
-                     domains = c(1.01, 1.99), 
+                     domains = c(0.50, 1.99), 
                      start.gm = TRUE, 
                      start.weights = NULL, 
                      print.level = 1) {

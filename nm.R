@@ -178,7 +178,7 @@ NewMatch <- function(Tr,
 }
 
 if (length(args)==4) {
-  nm = NewMatch(Tr, X, pop.size = args[3], max.generations = args[4], to.file = args[2])
+  nm = NewMatch(Tr, X, pop.size = as.integer(args[3]), max.generations = as.integer(args[4]), to.file = args[2])
 } else {
   nm = NewMatch(Tr, X, to.file = args[2])
 }

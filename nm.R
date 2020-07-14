@@ -178,7 +178,9 @@ NewMatch <- function(Tr,
 }
 
 if (length(args)==4) {
+  set.seed(123)
   nm = NewMatch(Tr, X, pop.size = as.integer(args[3]), max.generations = as.integer(args[4]), to.file = args[2])
 } else {
+  set.seed(123)
   nm = NewMatch(Tr, X, to.file = args[2])
 }

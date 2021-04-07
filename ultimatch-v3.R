@@ -13,7 +13,7 @@ library(stats)
 
 #################################################
 ######### model dependence utilities ############
-########## credit: Vinicius Miranda #############
+########## credit: Vinícius Miranda #############
 
 trim <- function(x){
   gsub("^\\s+|\\s+$", "", x)
@@ -149,26 +149,25 @@ myfit.imb <- function(matches, BM) {
   
 }
 
-
 # fit function #2 is adjusted Vini's robust.fitfunc.plus
+####################### change to OUTCOME being FIRST column
 
 myfit.md <- function(matches, BM) {
   ### Requirements
   # treatment column should be named 'treat'
-  # Balance matrix should have the last column as the outcome
+  # Balance matrix should have the FIRST column as the outcome
   # Balance matrix should also contain the treatment vector
   # Balance matrix should have appropriate column names
   
   # Get auxiliary objects
   vars <- colnames(BM) 
-  nvars <- length(vars)
   if (is.null(vars)) stop("Balance Matrix should have appropriate column names.") 
   base.form <- paste(
-    vars[nvars],
+    vars[1],
     "~",
-    paste(vars[-nvars], collapse="+")
+    paste(vars[-1], collapse="+")
   )
-  
+
   # Compute robustness
   df <- as.data.frame(rbind(BM[matches[,1],], BM[matches[,2],]), stringsAsFactors = FALSE)
   md <- modelDependence_(dataset = df, treatment = 'treat', 
@@ -177,13 +176,12 @@ myfit.md <- function(matches, BM) {
   return(md)
 }
 
-
 # fit function #3 is for hidden bias
 
 myfit.gamma <- function(matches, BM) {
   # ASSUME
   # last column of BM is outcome
-  
+
   outcomes <- BM[, ncol(BM)]
 
   # prepare inputs for psens
@@ -233,7 +231,7 @@ generate.weights <- function(n.vars, n.weights) {
   return(weights)
 }
 
-eval.weights <- function(dta, y, tr, M, wghts, mb.form, md.form, BM.imb) {
+eval.weights <- function(dta, y, tr, M, wghts, mb.form, md.form, BM.md, BM.imb) {
   
   # get data the way we need it
   Tr = dta[[tr]]
@@ -248,13 +246,13 @@ eval.weights <- function(dta, y, tr, M, wghts, mb.form, md.form, BM.imb) {
   
   # model dependence
   matches <- as.matrix(cbind(mout$index.treated, mout$index.control, mout$weights))
-  df <- as.data.frame(rbind(dta[matches[,1],], dta[matches[,2],]), stringsAsFactors = FALSE)
+  df <- as.data.frame(rbind(BM.md[matches[,1],], BM.md[matches[,2],]), stringsAsFactors = FALSE)
   md <- modelDependence_(dataset = df, treatment = tr, 
                          verbose=FALSE, base.form = md.form, median=TRUE)
   
   # Chris's imbalance
-  BM.imb <- BM.imb[matches[,1],] - BM.imb[matches[,2],]
-  imb <- sum(colSums(BM.imb)^2)
+  m <- BM.imb[mout$index.treated,] - BM.imb[mout$index.control,]
+  imb <- sum(colSums(m)^2)
   
   stor <- c(mb$AMsmallest.p.value, gamm, md, mout$se.standard, imb, mout$est, mout)
   
@@ -262,7 +260,7 @@ eval.weights <- function(dta, y, tr, M, wghts, mb.form, md.form, BM.imb) {
 }
 
 ulti.match <- function(dta, y = 'y', tr = 'treat', M = 1,
-                       form = NULL, form.pval = NULL, form.md = NULL, form.imb = NULL,
+                       form.pval = NULL, form.md = NULL, form.imb = NULL,
                        match.sim = TRUE, match.num = 100, genmatch.sim = TRUE, genmatch.num = 3, 
                        pop.size = 50, wait.generations = 5, max.generations = 10,
                        opt.pval = TRUE, opt.gamma = TRUE, opt.md = TRUE, opt.se = TRUE, opt.imb = TRUE,
@@ -283,12 +281,13 @@ ulti.match <- function(dta, y = 'y', tr = 'treat', M = 1,
   BM.pval <- model.frame(form.pval, dta)
   # gamma matrix - actually just the outcome vector
   # model dependence matrix
-  if (is.null(form.md)) {form.md <- paste('treat', '~', vars.form, '+', y)}
+  if (is.null(form.md)) {form.md <- paste(y, '~', tr, '+', vars.form)}
   BM.md <- model.frame(form.md, dta)
   # standard error matrix - also just the outcome vector
   # linear discrepancy imbalance matrix
+  # formula should be of the form '~ colnames'
   if (is.null(form.imb)) {BM.imb <- scale(X)} else {BM.imb <- scale(model.frame(form.imb, dta))}
-  
+
   ### PREPARING GENMATCH NUMBERS
   if (opt.pval == TRUE) {opt.pval <- genmatch.num}
   if (opt.gamma == TRUE) {opt.gamma <- genmatch.num}
@@ -321,7 +320,7 @@ ulti.match <- function(dta, y = 'y', tr = 'treat', M = 1,
   pb <- txtProgressBar(min = 0, max = match.num, style = 3) 
   for (i in 1:match.num) {
     
-    eval.out <- eval.weights(dta, y, tr, M, weights[[i]], form.pval, form.md, BM.imb)
+    eval.out <- eval.weights(dta, y, tr, M, weights[[i]], form.pval, form.md, BM.md, BM.imb)
     stor[i, ] <- eval.out[1:6]
     mouts[i] <- eval.out[7]
     setTxtProgressBar(pb,i)
@@ -337,7 +336,7 @@ ulti.match <- function(dta, y = 'y', tr = 'treat', M = 1,
     tbl[3,] <- list(min(stor$md, na.rm=TRUE), mean(stor$md, na.rm=TRUE), max(stor$md, na.rm=TRUE))
     tbl[4,] <- list(min(stor$se, na.rm=TRUE), mean(stor$se, na.rm=TRUE), max(stor$se, na.rm=TRUE))
     tbl[5,] <- list(min(stor$imb, na.rm=TRUE), mean(stor$imb, na.rm=TRUE), max(stor$imb, na.rm=TRUE))
-    row.names(tbl) <- c('p value', 'gamma', 'model dep', 'st error', 'lin. disc.')
+    row.names(tbl) <- c('p value', 'gamma', 'model dep', 'st error', 'imbalance')
     print(tbl)
   }
   
@@ -381,7 +380,7 @@ ulti.match <- function(dta, y = 'y', tr = 'treat', M = 1,
                        max.weight = 1, starting.values = diag(w), M = M, max.generations = max.generations,
                        wait.generations = wait.generations, fit.func = fn, print.level = 0)
     
-    eval.out <- eval.weights(dta, y, tr, M, diag(genout$par), form.pval, form.md, BM.imb)
+    eval.out <- eval.weights(dta, y, tr, M, diag(genout$par), form.pval, form.md, BM.md, BM.imb)
     
     # store the outcomes
     stor[j, ] <- eval.out[1:6]
@@ -484,41 +483,77 @@ dw.treat <- lalonde[lalonde$treat == 1,]
 cps <- read.dta("http://www.nber.org/~rdehejia/data/cps_controls.dta")[,-1]
 lalonde.cps <- rbind(dw.treat, cps)
 
+# add dummy variables re74_0 and re75_0
+lalonde.cps$re74_0 <- as.numeric(lalonde.cps$re74 > 0)
+lalonde.cps$re75_0 <- as.numeric(lalonde.cps$re75 > 0)
+
 # formulas for Match Balance, Model Dependence and Chris's Imabalance
 form.pval <- as.formula('treat ~ age + I(age^2) + education + I(education^2) + black +
   hispanic + married + nodegree + re74 + I(re74^2) + re75 + I(re75^2) +
-  I(re74*re75) + I(age*nodegree) + I(education*re74) + I(education*re75)')
+  re74_0 + re75_0 + I(age*education) + I(age*black) + I(age*hispanic) + I(age*married) + 
+  I(age*nodegree) + I(age*re74) + I(age*re75) + I(age*re74_0) + I(age*re75_0) +
+  I(education*black) + I(education*hispanic) + I(education*married) + I(education*nodegree) + 
+  I(education*re74) + I(education*re75) + I(education*re74_0) + I(education*re75_0) +
+  I(black*married) + I(black*nodegree) + I(black*re74) + I(black*re75) + 
+  I(black*re74_0) + I(black*re75_0) + I(hispanic*married) + I(hispanic*nodegree) + 
+  I(hispanic*re74) + I(hispanic*75) + I(hispanic*re74_0) + I(hispanic*re75_0) +
+  I(married*nodegree) + I(married*re74) + I(married*re75) + I(married*re74_0) + I(married*re75_0)
+  I(nodegree*re74) + I(nodegree*re75) + I(nodegree*re74_0) + I(nodegree*re75_0) + I(re74*re75) +
+  I(re74*re74_0) + I(re74*re75_0) + I(re75*re75_0) + I(re75*re74_0) + I(re74_0*re75_0)')
 
-form.md <- as.formula('re78 ~ treat + age + education + black + 
-                      hispanic + married + nodegree + re74 + re75')
-
-form.imb <- as.formula('treat ~ age + I(age^2) + education + I(education^2) + black +
+form.md <- as.formula('re78 ~ treat + age + I(age^2) + education + I(education^2) + black +
   hispanic + married + nodegree + re74 + I(re74^2) + re75 + I(re75^2) +
-  I(re74*re75) + I(age*nodegree) + I(education*re74) + I(education*re75)')
+  re74_0 + re75_0 + I(age*education) + I(age*black) + I(age*hispanic) + I(age*married) + 
+  I(age*nodegree) + I(age*re74) + I(age*re75) + I(age*re74_0) + I(age*re75_0) +
+  I(education*black) + I(education*hispanic) + I(education*married) + I(education*nodegree) + 
+  I(education*re74) + I(education*re75) + I(education*re74_0) + I(education*re75_0) +
+  I(black*married) + I(black*nodegree) + I(black*re74) + I(black*re75) + 
+  I(black*re74_0) + I(black*re75_0) + I(hispanic*married) + I(hispanic*nodegree) + 
+  I(hispanic*re74) + I(hispanic*75) + I(hispanic*re74_0) + I(hispanic*re75_0) +
+  I(married*nodegree) + I(married*re74) + I(married*re75) + I(married*re74_0) + I(married*re75_0)
+  I(nodegree*re74) + I(nodegree*re75) + I(nodegree*re74_0) + I(nodegree*re75_0) + I(re74*re75) +
+  I(re74*re74_0) + I(re74*re75_0) + I(re75*re75_0) + I(re75*re74_0) + I(re74_0*re75_0)')
+
+form.imb <- as.formula(' ~ age + I(age^2) + education + I(education^2) + black +
+  hispanic + married + nodegree + re74 + I(re74^2) + re75 + I(re75^2) +
+  re74_0 + re75_0 + I(age*education) + I(age*black) + I(age*hispanic) + I(age*married) + 
+  I(age*nodegree) + I(age*re74) + I(age*re75) + I(age*re74_0) + I(age*re75_0) +
+  I(education*black) + I(education*hispanic) + I(education*married) + I(education*nodegree) + 
+  I(education*re74) + I(education*re75) + I(education*re74_0) + I(education*re75_0) +
+  I(black*married) + I(black*nodegree) + I(black*re74) + I(black*re75) + 
+  I(black*re74_0) + I(black*re75_0) + I(hispanic*married) + I(hispanic*nodegree) + 
+  I(hispanic*re74) + I(hispanic*75) + I(hispanic*re74_0) + I(hispanic*re75_0) +
+  I(married*nodegree) + I(married*re74) + I(married*re75) + I(married*re74_0) + I(married*re75_0)
+  I(nodegree*re74) + I(nodegree*re75) + I(nodegree*re74_0) + I(nodegree*re75_0) + I(re74*re75) +
+  I(re74*re74_0) + I(re74*re75_0) + I(re75*re75_0) + I(re75*re74_0) + I(re74_0*re75_0)')
 
 
 ###########
 ## setup ##
 
-ut <- ulti.match(lalonde.cps, y = 're78', tr = 'treat',
+u <- ulti.match(lalonde.cps, y = 're78', tr = 'treat',
                 form.pval = form.pval, form.md = form.md, form.imb = form.imb, 
-                match.num = 1500, genmatch.num = 5, 
-                pop.size = 500, wait.generations = 5, max.generations = 30, 
+                match.num = 3, genmatch.num = 1,
+                pop.size = 10, wait.generations = 2, max.generations = 3, 
                 verbose = TRUE, M = 1)
 
-# save(u, file='u.RData')
+save(u, file='u.RData')
 
-ulti.plot(ut)
+ulti.plot(u)
 
+
+# utility function for loading data into a variable
 loadRData <- function(fileName){
   #loads an RData file, and returns it
   load(fileName)
   get(ls()[ls() != "fileName"])
 }
 
+# e.g.
 # M1 <- loadRData("M1.RData")
 
-# changelog notes
+
+##### CHANGELOG
 # DONE: change shape to diamonds
 # DONE: use match results for genmatch starting weights
 # DONE: setup M=1 / M=2
@@ -530,3 +565,8 @@ loadRData <- function(fileName){
 # enable hiding matching results
 # enable user choice of circle transparency
 
+##### checks on user input to be added
+# any NaN in BM.imb
+# match.num > genmatch.num
+# treatment and outcome columns correct
+# fomulas

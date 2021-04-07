@@ -510,13 +510,6 @@ ut <- ulti.match(lalonde.cps, y = 're78', tr = 'treat',
 
 ulti.plot(ut)
 
-# changelog notes
-# DONE: change shape to diamonds
-# DONE: use match results for genmatch starting weights
-# DONE: setup M=1 / M=2
-# - instead of genmatch pvalue <- use Chris's metric
-
-
 loadRData <- function(fileName){
   #loads an RData file, and returns it
   load(fileName)
@@ -525,8 +518,12 @@ loadRData <- function(fileName){
 
 # M1 <- loadRData("M1.RData")
 
+# changelog notes
+# DONE: change shape to diamonds
+# DONE: use match results for genmatch starting weights
+# DONE: setup M=1 / M=2
+# DONE: instead of genmatch pvalue <- use Chris's metric
 
-##### CHANGELOG
 # 50/50 color swap
 # enable cropping but ensure color scale remains the same
 # enable user choice for the number of diamonds

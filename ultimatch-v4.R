@@ -13,7 +13,7 @@ library(stats)
 
 #################################################
 ######### model dependence utilities ############
-########## credit: Vinícius Miranda #############
+########## credit: VinÃ­cius Miranda #############
 
 trim <- function(x){
   gsub("^\\s+|\\s+$", "", x)
@@ -482,13 +482,11 @@ ulti.hull <- function(dta, n = 1) {
 }
 
 
-ulti.prune <- function(ultiout, perc = 0.1, ignore.se = TRUE,
+ulti.prune <- function(dta, perc = 0.1, ignore.se = TRUE,
                        perc.pval = NA, perc.gamma = NA, perc.md = NA,
                        perc.se = NA, perc.imb = NA,
                        ret.pval = NA, ret.gamma = NA, ret.md = NA, 
                        ret.se = NA, ret.imb = NA) {
-  
-  dta <- ultiout$results
   
   # retain largest pvalues
   if (is.na(ret.pval)) {
@@ -556,7 +554,7 @@ ulti.prune <- function(ultiout, perc = 0.1, ignore.se = TRUE,
 
 }
 
-ulti.2D <- function(ultiout, prune = NULL, hull = NULL) {
+ulti.2D <- function(dta, prune = NULL, hull = NULL) {
   
   # plot the following pairs of variables
   # 1) imb x Gamma
@@ -571,8 +569,6 @@ ulti.2D <- function(ultiout, prune = NULL, hull = NULL) {
   
   # if hull is passed as an object,
   # plotting also draws the hulls
-  
-  dta <- ultiout$results
   
   npairs <- 6
   pairs <- list(
@@ -655,7 +651,10 @@ ulti.2D <- function(ultiout, prune = NULL, hull = NULL) {
     }
     
     fig <- fig %>% layout(
-      xaxis = list(title = axs[[i]][1]),
+      xaxis = list(title = list(text = axs[[i]][1], 
+                                standoff = 0), 
+                   side = "bottom",
+                   automargin = TRUE),
       yaxis = list(title = axs[[i]][2]))
     
     plot.list[[i]] <- fig
@@ -665,15 +664,19 @@ ulti.2D <- function(ultiout, prune = NULL, hull = NULL) {
                  nrows = 3, 
                  titleX = TRUE, 
                  titleY = TRUE,
-                 margin = 0.035)
+                 margin = c(0.04, 0.04, 0, 0.08),
+                 heights = c(0.36,0.36,0.28))
   
   return(fig)
 }
 
 
-ulti.3D <- function(ultiout, prune = NULL) {
+ulti.3D <- function(dta, xax, prune = NULL, ptsize = 20,
+                    max.md = NA, max.imb = NA, min.gamma = NA, min.pval = NA) {
+  
+  ######### USER INPUT NOT IMPLEMENTED YET LOL GOTTA DIRECTLY PLAY WITH CODE
   # default behaviour:
-  # X - imbalance but also accepts 'pval'
+  # X - HAS TO BE SPECIFIED either "p-value" or "imbalance"
   # Y - model dependence
   # Z - hidden bias (gamma)
   # point size - standard error # REMOVED
@@ -681,35 +684,51 @@ ulti.3D <- function(ultiout, prune = NULL) {
   
   # the prune object, in prune$indices, contains points to plot
   
-  if (is.null(prune)) {dta <- ultiout$results} 
-  else {dta <- ultiout$results[prune$indices,]}
+  if (!is.null(prune)) {dta <- dta[prune$indices,]}
   
+  if (is.na(max.md)) {max.md <- max(dta$md)}
+  if (is.na(max.imb)) {max.imb <- max(dta$imb)}
+  if (is.na(min.gamma)) {min.gamma <- min(dta$gamma)}
+  if (is.na(min.pval)) {min.pval <- min(dta$pvalue)}
+
   fig <- plot_ly(type="scatter3d", mode="markers", showlegend=FALSE)
   
   # 50% probability to flip color scale
-  if (sample(c(0,1), size=1) == 0) {
-    dta$ATT <- rescale(dta$ATT, to=c(max(dta$ATT), min(dta$ATT)))}
+  # FOR NOW WE DON'T DO THIS
+  # if (sample(c(0,1), size=1) == 0) {
+  #   dta$ATT <- rescale(dta$ATT, to=c(max(dta$ATT), min(dta$ATT)))}
+  
+  if (xax == "imbalance") {xdta <- dta$imb
+                           xrng <- c(0, max.imb)}
+  if (xax == "p-value") {xdta <- dta$pvalue
+                         xrng <- c(min.pval, max(dta$pvalue))}
   
   fig <- fig %>%
-    add_markers(x = dta$imb,
+    add_markers(x = xdta,
                 y = dta$md,
                 z = dta$gamma,
-                marker = list(size = 20,
+                marker = list(size = ptsize,
                               color = dta$ATT,
                               colorscale = "Viridis",
-                              showscale = TRUE,
+                              showscale = FALSE,
                               line = list(width = 0)),
-                hovertext = paste("imbalance:", dta$imb,
+                hovertext = paste("imbalance", dta$imb,
+                                  "<br>p-value:", dta$pvalue,
                                   "<br>MD:", dta$md,
                                   "<br>gamma:", dta$gamma),
                 hoverinfo = "text")
   
   fig <- fig %>% layout(
-    title = "Layout options in a 3d scatter plot",
     scene = list(
-      xaxis = list(title = "Imbalance"),
-      yaxis = list(title = "Model dependence"),
-      zaxis = list(title = "Gammas")
+      xaxis = list(
+        title = xax,
+        range = xrng),
+      yaxis = list(
+        title = "Model dep.",
+        range = c(0, max.md)),
+      zaxis = list(
+        title = "Gammas",
+        range = c(min.gamma, max(dta$gamma)))
     ))
   
   return(fig)
@@ -717,71 +736,6 @@ ulti.3D <- function(ultiout, prune = NULL) {
 }
 
 
-ulti.plot <- function(stor, pval.limit = 1e-6) {
-  # default behaviour:
-  # X - p values
-  # Y - model dependence
-  # Z - hidden bias
-  # point size - standard error
-  # colour - treatment effect
-  
-  # changelog:
-  # if genmatch included, plot it as diamonds
-  # for now this is always true
-  
-  # check if pvalues are 0 and remove from log plots
-  res <- stor$results
-  res$pvalhigh <- res$pvalue > pval.limit
-  res$resizedse <- rescale(res$se, to = c(40, 10))
-  
-  circles <- res[1:stor$match.num, ]
-  circles <- circles[which(circles$pvalhigh == TRUE), ]
-  diamonds <- res[(1+stor$match.num):nrow(res), ]
-  diamonds <- diamonds[which(diamonds$pvalhigh == TRUE), ]
-  
-  fig <- plot_ly(type="scatter3d", mode="markers", showlegend=FALSE)
-  
-  fig <- fig %>%
-    add_markers(x = circles$pvalue,
-                y = circles$md,
-                z = circles$gamma,
-                marker = list(size = circles$resizedse,
-                              color = circles$ATT,
-                              colorscale = "Viridis",
-                              showscale = TRUE,
-                              line = list(color="white")),
-                hovertext = paste("p-value:", circles$pvalue,
-                                  "<br>MD:", circles$md,
-                                  "<br>gamma:", circles$gamma,
-                                  "<br>SE:", circles$se),
-                hoverinfo = "text")
-  
-  fig <- fig %>%
-    add_markers(x = diamonds$pvalue,
-                y = diamonds$md,
-                z = diamonds$gamma,
-                marker = list(size = diamonds$resizedse, 
-                              symbol = "diamond", 
-                              color = diamonds$ATT,
-                              colorscale = "Viridis",
-                              showscale = TRUE,
-                              line = list(color="white")),
-                hovertext = paste("p-value:", diamonds$pvalue,
-                                  "<br>MD:", diamonds$md,
-                                  "<br>gamma:", diamonds$gamma,
-                                  "<br>SE:", diamonds$se),
-                hoverinfo = "text")
-  
-  fig <- fig %>% layout(
-    title = "Layout options in a 3d scatter plot",
-    scene = list(
-      xaxis = list(title = "p values", type = "log"),
-      yaxis = list(title = "Model dependence"),
-      zaxis = list(title = "Gammas")
-    ))
-  
-  return(fig)
-}
 
 
 #######################################################
@@ -863,15 +817,30 @@ loadRData <- function(fileName){
 # e.g.
 # M1C <- loadRData("M1C.RData")
 
-results <- loadRData("u_M1_1500_5_100_10_50_1.RData")
+r <- loadRData("u_M1_1500_5_100_10_50_1.RData")
+r1 <- loadRData("FINAL-m1.RData")
+r2 <- loadRData("FINAL-m2.RData")
+r3 <- loadRData("FINAL-m3.RData")
+
+dta <- rbind(r$results, r1$results, r2$results, r3$results)
 
 # using ret.gamma means all gammas over 1.4
 # using perc.pval means top 4% of pvalues
-pr <- ulti.prune(results, ret.gamma = 1.4, perc.pval = 0.04, perc.imb = 0.08)
+prune <- ulti.prune(dta)
 
 # create the 6 2D plots
-ulti.2D(results, pr)
-ulti.3D(results, pr)
+ulti.2D(dta, prune)
+
+# create the 3D plot with imbalance
+ulti.3D(dta, prune, x = "imbalance")
+# scuffed
+ulti.3D(dta, prune, x = "imbalance", max.imb = 40000, max.md = 1000)
+
+
+# create the 3D plot with p-value
+ulti.3D(dta, prune, x = "p-value")
+# scuffed
+ulti.3D(dta, prune, x = "p-value", max.md = 1000)
 
 ##### CHANGELOG
 # DONE: change shape to diamonds
@@ -889,4 +858,74 @@ ulti.3D(results, pr)
 # any NaN in BM.imb
 # match.num > genmatch.num
 # treatment and outcome columns correct
+
+
+################
+################
+# this function currecntly unused
+ulti.plot <- function(stor, pval.limit = 1e-6) {
+  # default behaviour:
+  # X - p values
+  # Y - model dependence
+  # Z - hidden bias
+  # point size - standard error
+  # colour - treatment effect
+  
+  # changelog:
+  # if genmatch included, plot it as diamonds
+  # for now this is always true
+  
+  # check if pvalues are 0 and remove from log plots
+  res <- stor$results
+  res$pvalhigh <- res$pvalue > pval.limit
+  res$resizedse <- rescale(res$se, to = c(40, 10))
+  
+  circles <- res[1:stor$match.num, ]
+  circles <- circles[which(circles$pvalhigh == TRUE), ]
+  diamonds <- res[(1+stor$match.num):nrow(res), ]
+  diamonds <- diamonds[which(diamonds$pvalhigh == TRUE), ]
+  
+  fig <- plot_ly(type="scatter3d", mode="markers", showlegend=FALSE)
+  
+  fig <- fig %>%
+    add_markers(x = circles$pvalue,
+                y = circles$md,
+                z = circles$gamma,
+                marker = list(size = circles$resizedse,
+                              color = circles$ATT,
+                              colorscale = "Viridis",
+                              showscale = TRUE,
+                              line = list(color="white")),
+                hovertext = paste("p-value:", circles$pvalue,
+                                  "<br>MD:", circles$md,
+                                  "<br>gamma:", circles$gamma,
+                                  "<br>SE:", circles$se),
+                hoverinfo = "text")
+  
+  fig <- fig %>%
+    add_markers(x = diamonds$pvalue,
+                y = diamonds$md,
+                z = diamonds$gamma,
+                marker = list(size = diamonds$resizedse, 
+                              symbol = "diamond", 
+                              color = diamonds$ATT,
+                              colorscale = "Viridis",
+                              showscale = TRUE,
+                              line = list(color="white")),
+                hovertext = paste("p-value:", diamonds$pvalue,
+                                  "<br>MD:", diamonds$md,
+                                  "<br>gamma:", diamonds$gamma,
+                                  "<br>SE:", diamonds$se),
+                hoverinfo = "text")
+  
+  fig <- fig %>% layout(
+    title = "Layout options in a 3d scatter plot",
+    scene = list(
+      xaxis = list(title = "p values", type = "log"),
+      yaxis = list(title = "Model dependence"),
+      zaxis = list(title = "Gammas")
+    ))
+  
+  return(fig)
+}
 

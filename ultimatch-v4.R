@@ -832,15 +832,15 @@ prune <- ulti.prune(dta)
 ulti.2D(dta, prune)
 
 # create the 3D plot with imbalance
-ulti.3D(dta, prune, x = "imbalance")
+ulti.3D(dta, prune, x = "imbalance", ptsize = 20)
 # scuffed
-ulti.3D(dta, prune, x = "imbalance", max.imb = 40000, max.md = 1000)
+ulti.3D(dta, prune, x = "imbalance", max.imb = 40000, max.md = 1000, ptsize = 20)
 
 
 # create the 3D plot with p-value
-ulti.3D(dta, prune, x = "p-value")
+ulti.3D(dta, prune, x = "p-value", ptsize = 20)
 # scuffed
-ulti.3D(dta, prune, x = "p-value", max.md = 1000)
+ulti.3D(dta, prune, x = "p-value", max.md = 1000, ptsize = 20)
 
 ##### CHANGELOG
 # DONE: change shape to diamonds
